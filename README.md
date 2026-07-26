@@ -7,14 +7,45 @@ In-memory document store exposed over [Model Context Protocol](https://modelcont
 ```
 go-mcp-anthropic-introduction/
 ├── main.go                          # stdio entry point
-├── internal/docserver/
-│   ├── docserver.go                 # server + tools + resources + prompts
-│   └── docserver_test.go            # 15 unit tests (in-memory transport)
+├── internal/docserver/              # each feature is a self-registering type
+│   ├── server.go                       # New() — registers every feature
+│   ├── store.go                        # docs map, mutex, accessors
+│   ├── helpers.go                      # textResult, toolErr, replaceAll, etc.
+│   ├── completion.go                   # MCP completion handler
+│   ├── read_doc.go                     # ReadDoc tool
+│   ├── edit_doc.go                     # EditDoc tool
+│   ├── list_docs_meta.go               # ListDocsMeta tool
+│   ├── documents_list.go               # DocumentsList resource
+│   ├── document.go                     # Document resource template
+│   ├── doc_stats.go                    # DocStats resource
+│   ├── format_prompt.go                # Format prompt
+│   ├── summarize_prompt.go             # Summarize prompt
+│   ├── translate_prompt.go             # Translate prompt
+│   └── docserver_test.go               # 19 unit tests (in-memory transport)
 ├── go.mod / go.sum
 ├── Makefile                         # build / run / inspector / test / tidy / clean
 ├── REFACTOR_PLAN.md                 # migration plan & rationale
 └── archive_cli_project_COMPLETE/    # Python arşivi (dokunulmaz)
 ```
+
+### Feature pattern
+
+Every tool, resource, and prompt follows the same shape — a struct that holds
+its own `*mcp.Tool` / `*mcp.Resource` / `*mcp.Prompt` spec, plus a `Register`
+method that wires it into a server. `server.go` doesn't know what's inside
+any feature; it only calls `New*().Register(s)`.
+
+```go
+// read_doc.go (representative)
+type ReadDoc struct{ spec *mcp.Tool }
+
+func NewReadDoc() *ReadDoc { return &ReadDoc{spec: &mcp.Tool{Name: "read_doc_contents", ...}} }
+func (r *ReadDoc) Register(s *mcp.Server) { mcp.AddTool(s, r.spec, r.handle) }
+func (r *ReadDoc) handle(_ context.Context, _ *mcp.CallToolRequest, in readArgs) (...) { ... }
+```
+
+Adding a new feature = new file with one type, no changes to `server.go`
+required unless you want it listed in `New()`.
 
 ## Capabilities
 
@@ -45,7 +76,7 @@ go-mcp-anthropic-introduction/
 ### Server
 
 - **Instructions:** "DocumentMCP — in-memory document store. Use the tools and resources to read, edit, and inspect documents. Use prompts (format, summarize, translate) to give the model a structured starting point."
-- **Version:** 0.2.0
+- **Version:** 0.3.0
 - **Transport:** stdio (newline-delimited JSON)
 
 ## Build & Run
@@ -53,7 +84,7 @@ go-mcp-anthropic-introduction/
 ```bash
 make build               # ./docserver
 make run                 # stdio transport
-make test                # 15 unit tests
+make test                # 20 unit tests
 make inspector           # npx @modelcontextprotocol/inspector ./docserver
 make inspector-headless  # BROWSER=none — UI link printed to terminal
 make inspector-stop      # kill any leftover inspector / vite / proxy
@@ -109,6 +140,10 @@ $ go test -v ./...
 === RUN   TestGetFormatPrompt        --- PASS
 === RUN   TestGetSummarizePrompt     --- PASS
 === RUN   TestGetTranslatePrompt     --- PASS
+=== RUN   TestCompleteResourceDocID  --- PASS  (completion for resource URI)
+=== RUN   TestCompletePromptDocID    --- PASS  (completion for prompt arg)
+=== RUN   TestCompleteTargetLanguage --- PASS  (completion for language list)
+=== RUN   TestCompleteEmptyPrefix    --- PASS  (empty prefix returns all)
 PASS
 ```
 
@@ -123,5 +158,7 @@ Tests use the SDK's `NewInMemoryTransports` — no subprocess, no Inspector, no 
 
 ## See also
 
+- [Introduction to Model Context Protocol by Anthropic (LinkedIn Learning)](https://www.linkedin.com/learning/introduction-to-model-context-protocol-by-anthropic/welcome-to-the-course) — the Python version of the same project. This repo is the Go equivalent: same tools (`read_doc_contents`, `edit_document`), same resources (`docs://documents`, `docs://documents/{doc_id}`), same prompt (`format`), plus a few extra (summarize, translate, list_docs_meta, docs://stats, completion handler). Watch the course for the protocol fundamentals and CLI design; read the Go code for the idiomatic translation.
 - `REFACTOR_PLAN.md` — decision log and rejected alternatives
 - `archive_cli_project_COMPLETE/mcp_server.py` — original Python implementation (untouched)
+roject_COMPLETE/mcp_server.py` — original Python implementation (untouched)

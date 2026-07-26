@@ -118,15 +118,22 @@ func TestReadDocMissing(t *testing.T) {
 
 func TestEditDoc(t *testing.T) {
 	runClient(t, func(ctx context.Context, cs *mcp.ClientSession, _ *mcp.InitializeResult) {
-		if _, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		editRes, err := cs.CallTool(ctx, &mcp.CallToolParams{
 			Name: "edit_document",
 			Arguments: map[string]any{
 				"doc_id":  "deposition.md",
 				"old_str": "Angela Smith, P.E.",
 				"new_str": "John Doe, Ph.D.",
 			},
-		}); err != nil {
+		})
+		if err != nil {
 			t.Fatalf("edit: %v", err)
+		}
+		if editRes.IsError {
+			t.Fatalf("unexpected IsError: %v", editRes.Content)
+		}
+		if tc, ok := editRes.Content[0].(*mcp.TextContent); !ok || tc.Text != "edited deposition.md (replaced 1 occurrence)" {
+			t.Errorf("unexpected confirmation text: %q", tc.Text)
 		}
 
 		res, err := cs.CallTool(ctx, &mcp.CallToolParams{
@@ -142,6 +149,42 @@ func TestEditDoc(t *testing.T) {
 		}
 		if !strings.Contains(tc.Text, "John Doe") {
 			t.Error("edit did not insert new string")
+		}
+	})
+}
+
+func TestEditDocOldStrNotFound(t *testing.T) {
+	runClient(t, func(ctx context.Context, cs *mcp.ClientSession, _ *mcp.InitializeResult) {
+		const untouched = "20m condenser tower"
+		res, err := cs.CallTool(ctx, &mcp.CallToolParams{
+			Name: "edit_document",
+			Arguments: map[string]any{
+				"doc_id":  "report.pdf",
+				"old_str": "string that does not exist anywhere in the document",
+				"new_str": "replacement",
+			},
+		})
+		if err != nil {
+			t.Fatalf("CallTool: %v", err)
+		}
+		if !res.IsError {
+			t.Fatal("expected IsError=true when old_str not found")
+		}
+		tc := res.Content[0].(*mcp.TextContent)
+		if !strings.Contains(tc.Text, "not found") {
+			t.Errorf("expected 'not found' in error text, got %q", tc.Text)
+		}
+
+		// verify the document body is unchanged
+		readRes, err := cs.CallTool(ctx, &mcp.CallToolParams{
+			Name:      "read_doc_contents",
+			Arguments: map[string]any{"doc_id": "report.pdf"},
+		})
+		if err != nil {
+			t.Fatalf("read after failed edit: %v", err)
+		}
+		if !strings.Contains(readRes.Content[0].(*mcp.TextContent).Text, untouched) {
+			t.Errorf("document was mutated despite failed edit")
 		}
 	})
 }
