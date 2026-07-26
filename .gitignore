@@ -1,4 +1,33 @@
+# Go build artifacts
+/docserver
+/docserver-*
+/bin/
+*.exe
+*.test
+*.out
+*.prof
+
+# Go workspace files (rarely committed)
+go.work
+go.work.sum
+
+# Environment / secrets — never commit
 .env
-__pycache__
-.venv
+.env.*
+!.env.example
+
+# Python (archive_cli_project_COMPLETE)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+
+# OS / editor
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
