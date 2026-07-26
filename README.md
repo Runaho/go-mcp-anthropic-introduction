@@ -78,6 +78,36 @@ required unless you want it listed in `New()`.
 - **Version:** 0.3.0
 - **Transport:** stdio (newline-delimited JSON)
 
+## Beyond the reference implementation
+
+The Python `archive_cli_project_COMPLETE/mcp_server.py` ships 2 tools, 2 resources, and 1 prompt (the LinkedIn Learning course scope). This Go version keeps every one of those and adds:
+
+**Tools**
+- `list_docs_meta` — returns aggregate stats (count, total chars, average chars) as JSON. The Python version has no equivalent; clients had to fetch the full document list to count it themselves.
+
+**Resources**
+- `docs://stats` — JSON resource counterpart to `list_docs_meta` for clients that prefer URI-based lookup over tool calls.
+
+**Prompts**
+- `summarize(doc_id)` — instructs the model to produce a 3-5 sentence summary via `read_doc_contents`.
+- `translate(doc_id, target_language)` — instructs the model to translate via `read_doc_contents`, with completion support for the language argument.
+
+**Completion handler**
+- `ref/resource` on `docs://documents/{doc_id}` returns prefix-matched doc IDs as the user types.
+- `ref/prompt` for the `doc_id` argument on `format`, `summarize`, and `translate` does the same.
+- `ref/prompt` for the `target_language` argument on `translate` returns a curated list of seven languages.
+
+**Tool annotations** (per the MCP spec, the Python reference omits these)
+- `read_doc_contents` and `list_docs_meta` declare `readOnlyHint: true`.
+- `edit_document` declares `destructiveHint: true`, `idempotentHint: false`, `openWorldHint: false`, so clients can render a confirmation prompt before invoking it.
+
+**Tighter `edit_document` semantics**
+- The reference silently no-ops when `old_str` is not present in the document. This version returns `IsError: true` with a descriptive message and a `toolErr`-style result, so the model can recover and retry.
+- On success, the tool returns a confirmation string (`edited X (replaced N occurrence|occurrences)`) so the caller can verify the edit actually applied.
+
+**Code organisation**
+- The original `mcp_server.py` is procedural; the Go version splits every tool, resource, and prompt into its own file as a self-registering type. Adding a new feature is a new file, not a patch to a single 380-line module.
+
 ## Build & Run
 
 ```bash
