@@ -21,7 +21,7 @@ go-mcp-anthropic-introduction/
 │   ├── format_prompt.go                # Format prompt
 │   ├── summarize_prompt.go             # Summarize prompt
 │   ├── translate_prompt.go             # Translate prompt
-│   └── docserver_test.go               # 19 unit tests (in-memory transport)
+│   └── docserver_test.go               # 20 unit tests (in-memory transport)
 ├── go.mod / go.sum
 ├── Makefile                         # build / run / inspector / test / tidy / clean
 ├── REFACTOR_PLAN.md                 # migration plan & rationale
