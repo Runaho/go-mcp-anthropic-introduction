@@ -24,7 +24,6 @@ go-mcp-anthropic-introduction/
 │   └── docserver_test.go               # 20 unit tests (in-memory transport)
 ├── go.mod / go.sum
 ├── Makefile                         # build / run / inspector / test / tidy / clean
-├── REFACTOR_PLAN.md                 # migration plan & rationale
 └── archive_cli_project_COMPLETE/    # Python arşivi (dokunulmaz)
 ```
 
