@@ -159,6 +159,5 @@ Tests use the SDK's `NewInMemoryTransports` — no subprocess, no Inspector, no 
 ## See also
 
 - [Introduction to Model Context Protocol by Anthropic (LinkedIn Learning)](https://www.linkedin.com/learning/introduction-to-model-context-protocol-by-anthropic/welcome-to-the-course) — the Python version of the same project. This repo is the Go equivalent: same tools (`read_doc_contents`, `edit_document`), same resources (`docs://documents`, `docs://documents/{doc_id}`), same prompt (`format`), plus a few extra (summarize, translate, list_docs_meta, docs://stats, completion handler). Watch the course for the protocol fundamentals and CLI design; read the Go code for the idiomatic translation.
-- `REFACTOR_PLAN.md` — decision log and rejected alternatives
 - `archive_cli_project_COMPLETE/mcp_server.py` — original Python implementation (untouched)
 roject_COMPLETE/mcp_server.py` — original Python implementation (untouched)
